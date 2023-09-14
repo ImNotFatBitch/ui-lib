@@ -8,12 +8,11 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
         local context = syn_context_get()
         syn_context_set(7)
         local new = {}
-        for i,v in ipairs(tbl) do --roblox iterates the array part
+        for i,v in ipairs(tbl) do
             if typeof(v) ~= "Instance" then
                 table.insert(new, v)
             else
                 if v == CoreGui or v == game then
-                    --insert only the default roblox guis
                     for i,v in pairs(RobloxGuis) do
                         local gui = CoreGui:FindFirstChild(v)
                         if gui then
@@ -32,7 +31,6 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
                     if not CoreGui:IsAncestorOf(v) then
                         table.insert(new, v)
                     else
-                        --don't insert it if it's a descendant of a different gui than default roblox guis
                         for j,k in pairs(RobloxGuis) do
                             local gui = CoreGui:FindFirstChild(k)
                             if gui then
@@ -52,13 +50,12 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
     
     local old
     old = hookfunc(ContentProvider.PreloadAsync, function(self, tbl, cb)
-        if self ~= ContentProvider or type(tbl) ~= "table" or type(cb) ~= "function" then --note: callback can be nil but in that case it's useless anyways
+        if self ~= ContentProvider or type(tbl) ~= "table" or type(cb) ~= "function" then
             return old(self, tbl, cb)
         end
     
-        --check for any errors that I might've missed (such as table being {[2] = "something"} which causes "Unable to cast to Array")
         local err
-        task.spawn(function() --TIL pcalling a C yield function inside a C yield function is a bad idea ("cannot resume non-suspended coroutine")
+        task.spawn(function()
             local s,e = pcall(old, self, tbl)
             if not s and e then
                 err = e
@@ -66,7 +63,7 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
         end)
        
         if err then
-            return old(self, tbl) --don't pass the callback, just in case
+            return old(self, tbl)
         end
     
         tbl = FilterTable(tbl)
@@ -84,7 +81,7 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
     
             local err
             task.spawn(function()
-                setnamecallmethod(method) --different thread, different namecall method
+                setnamecallmethod(method)
                 local s,e = pcall(old, self, args[1])
                 if not s and e then
                     err = e
@@ -124,8 +121,6 @@ local mouse = player:GetMouse()
 local viewPortSize = workspace.CurrentCamera.ViewportSize
 
 local originalElements = {}
--- Add Tween Dictonary with format Tweens.ElementType.TweenName to ignore repetitive variables
-
 local Library = {}
 local elementHandler = {}
 local windowHandler = {}
@@ -1920,10 +1915,8 @@ function elementHandler:Remove()
 	self.GuiToRemove:Destroy()
 end
 
---Add zindex var to determine which window goes over which
---Add var to only have one window open at a time allowed
 function Library.new(windowName: string, constrainToScreen: boolean?, width: number?, height: number?, visibilityKeybind: string?, backgroundImageId: string?): table
-	local window = setmetatable({}, windowHandler) -- remove elementhandler from window hanlers index?
+	local window = setmetatable({}, windowHandler)
 	local windowInstance = originalElements.Window:Clone()
 	local startDragMousePos
 	local startDragWindowPos
@@ -1979,7 +1972,7 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
         local closeWindowTween = TweenService:Create(windowInstance.Background, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
         closeWindowTween.Completed:Connect(function()
             task.wait()
-			windowInstance:Destroy() -- add cool tween cause cool
+			windowInstance:Destroy()
             window = nil
         end)
         closeWindowTween:Play()
@@ -2069,7 +2062,7 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 	end)
 
 	heading.Title.Text = windowName or "Stellar"
-	windowInstance.Parent = game:GetService("CoreGui") -- Change to core later on and add detection bypass
+	windowInstance.Parent = game:GetService("CoreGui")
 	background.Size = UDim2.fromOffset(background.AbsoluteSize.X, background.AbsoluteSize.Y)
 	
 	if width then
@@ -2217,7 +2210,7 @@ function windowHandler:Tab(tabName: string, tabImage: string): table
 	tab.ElementToParentChildren = pageInstance
 	
 	tabInstance.TabText.Text = tabName or "N/A"
-	tabInstance.TabImage.Image = tabImage or "rbxassetid://14768967526" -- Add n/a found image here later on
+	tabInstance.TabImage.Image = tabImage or "rbxassetid://14768967526"
 
 	tabInstance.MouseEnter:Connect(onMouseEnter)
 	tabInstance.MouseLeave:Connect(onMouseLeave)
@@ -2258,7 +2251,7 @@ function tabHandler:Remove()
 	self.PageToRemove:Destroy()
 end
 
-function tabHandler:Section(sectionTitle: string) -- Add option to make on left or right after
+function tabHandler:Section(sectionTitle: string)
 	local section = setmetatable({}, sectionHandler)
 	local sectionInstance = originalElements.Section:Clone()
 	local isMaximized = true
@@ -2395,7 +2388,7 @@ function elementHandler:Label(labelInputtedText: string, textSize: number, textC
 end
 
 function labelHandler:ChangeText(newText: string, playAnimation: boolean): nil
-	local textParams = Instance.new("GetTextBoundsParams") -- Add Tween here for text
+	local textParams = Instance.new("GetTextBoundsParams")
 	textParams.Text = newText or "N/A"
 	textParams.Font = self.Instance.LabelBackground.LabelText.FontFace
 	textParams.Size = 13
@@ -2479,8 +2472,7 @@ function elementHandler:Toggle(toggleName: string, callback): table
 	
 	return toggle
 end
- -- SET IDENTIFIER IN SELF AND ADD TOGGLES TO EACH IDENTIFIER RADIO GROUP
-function toggleHandler:Set(bool: boolean, callback): nil -- Add Callback to self?
+function toggleHandler:Set(bool: boolean, callback): nil
 	local tweenTime = .275
 	local cornerOnTween = TweenService:Create(self.Instance.BoxBackground.InnerBox.CenterBox.ToggleImage.ToggleImageCorner, TweenInfo.new(tweenTime, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {CornerRadius = UDim.new(0, 0)})
 	local cornerOffTween = TweenService:Create(self.Instance.BoxBackground.InnerBox.CenterBox.ToggleImage.ToggleImageCorner, TweenInfo.new(tweenTime, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {CornerRadius = UDim.new(.5, 0)})
@@ -2507,7 +2499,7 @@ function toggleHandler:Set(bool: boolean, callback): nil -- Add Callback to self
 	callback(bool)
 end
 
-function elementHandler:Button(buttonName: string, callback): table -- Add Callback to self?
+function elementHandler:Button(buttonName: string, callback): table
 	local button = setmetatable({}, buttonHandler)
 	local buttonInstance = originalElements.Button:Clone()
 	local textOffset = 4
@@ -2620,7 +2612,7 @@ function dropdownHandler:ChangeText(newText: string)
 end
 
 function elementHandler:Slider(sliderName: string, callback, maximumValue: number, minimumValue: number): table
-	local slider = setmetatable({}, sliderHandler) -- MAKE RIGHT CLICK AND BAR GOES TO MID
+	local slider = setmetatable({}, sliderHandler)
 	local sliderInstance = originalElements.Slider:Clone()
 	local isMouseDown = false
 	local sliderBar = sliderInstance.SliderBackground.SliderInnerBackground.Slider
@@ -2881,8 +2873,6 @@ function elementHandler:SearchBar(placeholderText: string): table
 	return searchBar
 end
 
---REWORK KEYBIND COMPLETLEY INEFFICENT !!!
--- ADD RIGHT CLICK TO REMOVE CURRENT KEYBIND TO NOTHING
 function elementHandler:Keybind(keybindName: string, callback, defaultKey: string): table
 	local keybind = setmetatable({}, keybindHandler)
 	local keybindInstance = originalElements.Keybind:Clone()
@@ -2962,9 +2952,8 @@ function elementHandler:Keybind(keybindName: string, callback, defaultKey: strin
 		end
 		inputBeingProcessed = false	
 	end
-	-- for toggle radio buttons do a fn to loop all and toggles in table given and setttoggle fn to false  by checking if self.IsToggled
 	requiredInputKeyTextTween.Completed:Connect(function(playbackState)
-		if playbackState == Enum.PlaybackState.Completed and not isOverriding then -- Animation runs after other override starts due to tween completed after override starts
+		if playbackState == Enum.PlaybackState.Completed and not isOverriding then
 			if textAnimation then
 				coroutine.close(textAnimation)
 			end
@@ -3070,7 +3059,6 @@ function elementHandler:TextBox(textBoxName:string, callback): table
 	return textBox
 end
 
---Fix toggle img it's imported as orange make it white
 function elementHandler:ColorWheel(colorWheelName: string, callback): table
 	local colorWheel = setmetatable({}, colorWheelHandler)
 	local colorWheelInstance = originalElements.ColorWheel:Clone()
